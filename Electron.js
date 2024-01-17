@@ -2,6 +2,7 @@
 class Electron extends Particle {
     constructor(x, y, z) {
         super(x, y, z, 'blue', 3); // the number is the size to be rendered
-        this.realSize = 3; // not really but for sake of this it is;
+        this.mass = 9.11e-31;
+        this.charge = -1.6e-19;
     }
 }
