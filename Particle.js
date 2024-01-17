@@ -1,8 +1,8 @@
 class Particle {
-    constructor(x, y, z, colour, size) {
+    constructor(x, y, colour, size) {
         this.x = x;
         this.y = y;
-        this.z = z;
+
         this.colour = colour;
         this.size = size;
     }
