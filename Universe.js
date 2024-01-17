@@ -5,15 +5,11 @@ class Universe {
 
         this.particles = [];
 
-        this.neutronCount = 10;
-        this.electronsCount = 10;
-        this.protonsCount = 10;
+        this.neutronCount = 2;
+        this.electronsCount = 2;
+        this.protonsCount = 2;
 
-        // +-
-        this.maxX = 10000;
-        this.maxY = 10000;
-
-        this.timeTick = 500;
+        this.timeTick = 500; // how fast the engine should run (500 is real time)
 
         this.fakeBigBang()
     }
@@ -22,23 +18,17 @@ class Universe {
     fakeBigBang() {
         // init neutrons
         for (let i = 0; i < this.neutronCount; i++) {
-            let operators = [1, -1];
-
-            this.particles.push(new Neutron((Math.random() * this.maxX * operators[Math.floor(Math.random() * operators.length)]), (Math.random() * this.maxY * operators[Math.floor(Math.random() * operators.length)])));
+            this.particles.push(new Neutron((Math.random() * this.canvas.width), Math.random() * this.canvas.height));
         }
 
         // init electrons
         for (let i = 0; i < this.electronsCount; i++) {
-            let operators = [1, -1];
-
-            this.particles.push(new Electron((Math.random() * this.maxX * operators[Math.floor(Math.random() * operators.length)]), (Math.random() * this.maxY * operators[Math.floor(Math.random() * operators.length)])));
+            this.particles.push(new Electron((Math.random() * this.canvas.width), Math.random() * this.canvas.height));
         }
 
         // init protons
         for (let i = 0; i < this.protonsCount; i++) {
-            let operators = [1, -1];
-
-            this.particles.push(new Proton((Math.random() * this.maxX * operators[Math.floor(Math.random() * operators.length)]), (Math.random() * this.maxY * operators[Math.floor(Math.random() * operators.length)])));
+            this.particles.push(new Proton((Math.random() * this.canvas.width), Math.random() * this.canvas.height));
         }
 
         this.gameLoop(this.canvas, this.context);
@@ -47,45 +37,65 @@ class Universe {
     // "game"
     gameLoop(canvas, context) {
         console.log('loop');
-        console.log(this.particles.length);
+
+        // canvas stuffs and resets
         context.clearRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = 'black';
+        context.fillRect(0, 0, canvas.width, canvas.height);
 
         for (let i = 0; i < this.particles.length; i++) {
             this.particles[i].draw(canvas, context);
 
-            // uh oh, loop de oop
+            // prevent from escaping box
+            if (this.particles[i].x > canvas.width ) {
+                this.particles[i].x = 0;
+            }
+
+            if (this.particles[i].x < 0) {
+                this.particles[i].x = canvas.width - 1;
+            }
+
+            if (this.particles[i].y > canvas.height) {
+                this.particles[i].y = 0;
+            }
+
+            if (this.particles[i].y < 0) {
+                this.particles[i].y = canvas.height - 1;
+            }
+
             for (let j = 0; j < this.particles.length; j++) {
                 if (j !== i) {
-                    let distance = this.calcDistance(this.particles[i], this.particles[j]);
 
-                    if (distance < this.maxX / 2) {
-                        // f = ma
-                        // a = f/m
+                    let dx = this.particles[j].x - this.particles[i].x;
+                    let dy = this.particles[j].y - this.particles[i].y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
 
-                        let k = 8.9875e9;
-                        let force = (k * this.particles[i].charge * this.particles[j].charge) / (distance * distance);
+                    if (distance < this.canvas.width / 1.5 && distance > 10) {
+                        let force = this.calcForce(this.particles[i], this.particles[j], distance);
 
-                        let angle = this.calcAngle(this.particles[i], this.particles[j]);
-
-                        let forceDirection = {
-                            x: Math.cos(angle * Math.PI / 180),
-                            y: Math.sin(angle * Math.PI / 180)
+                        let direction = {
+                            x: dx / distance,
+                            y: dy / distance
                         };
 
                         // Calculate acceleration (a = F/m)
                         let acceleration = {
-                            x: forceDirection.x * force / this.particles[i].mass,
-                            y: forceDirection.y * force / this.particles[i].mass
+                            x: direction.x * force / this.particles[i].mass,
+                            y: direction.y * force / this.particles[i].mass
                         };
 
                         console.log('updating x and y');
 
-                        console.log(this.particles[j].x);
+                        // pdate velocity with acceleration
+                        this.particles[i].velocity.x += acceleration.x * this.timeTick;
+                        this.particles[i].velocity.y += acceleration.y * this.timeTick;
 
-                        this.particles[j].x += acceleration.x * this.timeTick * 1090;
-                        this.particles[j].y += acceleration.y * this.timeTick * 1000;
+                        // update position with velocity
+                        this.particles[i].x += this.particles[i].velocity.x * this.timeTick;
+                        this.particles[i].y += this.particles[i].velocity.y * this.timeTick;
 
-                        console.log(this.particles[j].x);
+                        // save direction idk why, prob no reason
+                        this.particles[i].direction = direction;
                     }
                 }
             }
@@ -96,17 +106,17 @@ class Universe {
         }, 500);
     }
 
-    calcDistance(point1, point2) {
-        let dx = point2.x - point1.x;
-        let dy = point2.y - point1.y;
-
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
     calcAngle(point1, point2) {
         let dx = point2.x - point1.x;
         let dy = point2.y - point1.y;
 
-        return Math.atan2(dy, dx) * 180 / Math.PI;
+        return Math.atan2(dy, dx);
+    }
+
+    calcForce(particle1, particle2, distance) {
+        let k = 8.9875e9;
+        let force = -1 * (k * particle1.charge * particle2.charge) / (distance * distance);
+
+        return force;
     }
 }
